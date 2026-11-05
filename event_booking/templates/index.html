@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+  <h1>Hello</h1>
+  <a href="/sign-in">SING IN</a>
+     {% for event in events %}
+    <h1>{{ event.title }}</h1>
+    <h3>{{ event.people_amount }}</h3>
+    <h3>{{ event.people_max }}</h3>
+    <p>{{ event.description }}</p>
+    <input type="hidden" name="event_id" value="{{ event_id }}">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    {% if success == True %}
+    <p>registration successful</p>
+    {% elif success == False %}
+    <p>there was a problem with your request</p>
+    {% endif %}
+    <button class='b-submit' type="submit">Register</button>
+  {% endfor %}
+    <script>
+        document.querySelectorAll('.b-submit').forEach(
+    </script>
+</body>
+</html>
