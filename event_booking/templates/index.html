@@ -3,26 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <style> form {margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }</style>
 </head>
 <body>
   <h1>Hello</h1>
-  <a href="/sign-in">SING IN</a>
-     {% for event in events %}
-    <h1>{{ event.title }}</h1>
-    <h3>{{ event.people_amount }}</h3>
-    <h3>{{ event.people_max }}</h3>
-    <p>{{ event.description }}</p>
-    <input type="hidden" name="event_id" value="{{ event_id }}">
-    <input type="hidden" name="user_id" value="{{ user_id }}">
-    {% if success == True %}
-    <p>registration successful</p>
-    {% elif success == False %}
-    <p>there was a problem with your request</p>
-    {% endif %}
-    <button class='b-submit' type="submit">Register</button>
+  <a href="login/sign_in">SING IN</a>
+  <a href="login/sign_up">SING UP</a>
+
+  {% for event in events %}
+    <form action="/home" method="post">
+        <h1>{{ event.title }}</h1>
+        <h3>{{ event.people_amount }}</h3>
+        <h3>{{ event.people_max }}</h3>
+        <p>{{ event.description }}</p>
+        <label for="time_slot_{{ event.id }}">Выберите время:</label>
+        <select name="time_slot" id="time_slot_{{ event.id }}" required>
+            <option value="" disabled selected>-- Выберите временной слот --</option>
+            {% for slot in event.slots %}
+                <option value="{{ slot.start }}-{{ slot.end }}">{{ slot.start }} - {{ slot.end }}</option>
+            {% endfor %}
+        </select>
+        <input type="hidden" name="event_id" value="{{ event.id }}">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+
+        <button class='b-submit' type="submit">Register</button>
+    </form>
   {% endfor %}
-    <script>
-        document.querySelectorAll('.b-submit').forEach(
-    </script>
 </body>
 </html>
