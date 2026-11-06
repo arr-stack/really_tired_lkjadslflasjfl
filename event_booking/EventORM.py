@@ -36,3 +36,5 @@ class User(Base):
     email: Mapped[str] = mapped_column('email')
     name: Mapped[str] = mapped_column('name')
     password: Mapped[str] = mapped_column('password')
+
+#name #name@example.com #password123

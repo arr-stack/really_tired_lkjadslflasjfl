@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI, Request, Depends, HTTPException, Form
 from starlette.responses import RedirectResponse
 from starlette.templating import Jinja2Templates
-from authx import AuthXConfig, AuthX
+from authx import AuthXConfig, AuthX, TokenPayload
 from EventORM import Session, User, Events, Registarations
 from sqlalchemy import insert, select, update
 from starlette import status
@@ -37,6 +37,10 @@ def timeslots_gen(time_start: time, time_end: time):
 
 @app.get('/home')
 def home(request: Request):
+    return templates.TemplateResponse(request, 'home.html')
+
+@app.get('/home/events', dependencies=[Depends(secret.access_token_required)])
+def get_events(request: Request):
     with Session() as session:
         events = session.scalars(select(Events)).all()
         slots_events = []
@@ -58,32 +62,32 @@ def home(request: Request):
             })
     return templates.TemplateResponse(request, 'index.html', {'events': slots_events})
 
-@app.post('/home', dependencies=[Depends(secret.access_token_required)])
-def get(user_id: int = Form(), event_id: int = Form(), time_slot: str = Form()):
+@app.post('/home/events')
+def get_s(event_id: int = Form(), time_slot: str = Form(), payload: TokenPayload = Depends(secret.access_token_required)):
+    user_id = payload.sub
     start_str, end_str = time_slot.split('-')
     slot_start = datetime.strptime(start_str, "%H:%M").time()
     slot_end = datetime.strptime(end_str, "%H:%M").time()
     with Session() as session:
-        event = session.execute(insert(Registarations).values(event_id=event_id, user_id=user_id))
+        event = session.execute(select(Events).where(Events.id == event_id))
 
         if event.people_amount == event.people_max:
             raise HTTPException(status_code=400, detail='No more people')
-        session.execute(
-            insert(Registarations).values(event_id=event.id, user_id=user_id,
-                                          time_slot_start=slot_start, time_slot_end=slot_end)
-        )
+        session.execute(insert(Registarations).values(event_id=event.id,
+                                                      user_id=user_id,
+                                                      time_slot_start=slot_start,
+                                                      time_slot_end=slot_end))
         session.execute(update(Events).where(Events.id == event.id).values(people_amount=event.people_amount + 1))
         session.commit()
 
     return RedirectResponse(url='/home', status_code = status.HTTP_303_SEE_OTHER)
 
-
 @app.get("/login/sign_in")
-def sign_in(request: Request):
+def get_login(request: Request):
     return templates.TemplateResponse(request, 'sign_in.html')
 
 @app.get("/login/sign_up")
-def sign_up(request: Request):
+def get_signup(request: Request):
     return templates.TemplateResponse(request, 'sign_up.html')
 
 @app.post("/login/sign_in")
@@ -93,19 +97,19 @@ def log_in(email: str = Form(), password: str = Form()):
         data = session.scalars(result).first()
         if data and data.password == password:
             token = secret.create_access_token(uid=str(data.id))
-            response = RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
-            response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token)
+            response = RedirectResponse(url="/home/events", status_code=status.HTTP_303_SEE_OTHER)
+            response.set_cookie(key=config.JWT_ACCESS_COOKIE_NAME, value=token, samesite="lax", path='/', httponly=True, secure=False)
             return response
         else:
             return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
-@app.post('login/sign_up')
-def sign_up(username: str = Form(), email: str = Form(), password: str = Form()):
+@app.post('/login/sign_up')
+def sign_up(name: str = Form(), email: str = Form(), password: str = Form()):
     with Session() as session:
-        session.execute(insert(User).values(username=username, email=email, password=password))
+        session.execute(insert(User).values(name=name, email=email, password=password))
         session.commit()
-        return RedirectResponse(url='/home', status_code= status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url='/home', status_code= status.HTTP_303_SEE_OTHER)
 
 if __name__ == "__main__":
     uvicorn.run(app, host='127.0.0.1', port=8000)

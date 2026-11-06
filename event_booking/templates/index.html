@@ -11,7 +11,7 @@
   <a href="login/sign_up">SING UP</a>
 
   {% for event in events %}
-    <form action="/home" method="post">
+    <form action="/home/events" method="post">
         <h1>{{ event.title }}</h1>
         <h3>{{ event.people_amount }}</h3>
         <h3>{{ event.people_max }}</h3>
@@ -24,7 +24,6 @@
             {% endfor %}
         </select>
         <input type="hidden" name="event_id" value="{{ event.id }}">
-        <input type="hidden" name="user_id" value="{{ user_id }}">
 
         <button class='b-submit' type="submit">Register</button>
     </form>
